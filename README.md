@@ -1,14 +1,9 @@
-# Default starter for Gridsome
+# LatLng Address Converter
 
-This is the project you get when you run `gridsome create new-project`.
+Using Google's Geocode API, you can provide addresses to the page and it will return Latitude and Longitude values for the provided addresses in a JSON format.
 
-### 1. Install Gridsome CLI tool if you don't have
+### Tech
 
-`npm install --global @gridsome/cli`
-
-### 2. Create a Gridsome project
-
-1. `gridsome create my-gridsome-site` to install default starter
-2. `cd my-gridsome-site` to open the folder
-3. `gridsome develop` to start a local dev server at `http://localhost:8080`
-4. Happy coding 🎉🙌
+- Gridsome (Vue)
+- Bootstrap
+- Google Geocode API
