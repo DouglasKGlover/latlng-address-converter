@@ -7,31 +7,50 @@
         </div>
       </div>
 
-      <div class="row mb-4">
-        <div class="col">
-          <label for="textArea"
-            >Input multiple addresses on separate lines</label
-          >
-          <textarea
-            v-model="textArea"
-            id="textArea"
-            class="form-control"
-            rows="3"
-          ></textarea>
+      <form>
+        <div class="row mb-4">
+          <div class="col">
+            <label for="password">Password:</label>
+            <input
+              type="password"
+              id="password"
+              v-model="password"
+              class="form-control"
+              required
+            />
+            <p class="text-danger" v-if="passwordError">
+              <small>Incorrect password.</small>
+            </p>
+          </div>
         </div>
-      </div>
 
-      <div class="row mb-4">
-        <div class="col">
-          <p class="lead">
-            <strong>Note:</strong> Each request costs $0.005 ($5/1k), so please
-            use somewhat sparingly.
-          </p>
-          <button v-on:click="geocode" class="btn btn-warning">
-            Convert to LatLng
-          </button>
+        <div class="row mb-4">
+          <div class="col">
+            <label for="textArea"
+              >Input multiple addresses on separate lines:</label
+            >
+            <textarea
+              v-model="textArea"
+              id="textArea"
+              class="form-control"
+              rows="3"
+              required
+            ></textarea>
+          </div>
         </div>
-      </div>
+
+        <div class="row mb-4">
+          <div class="col">
+            <p class="lead">
+              <strong>Note:</strong> Each request costs $0.005 ($5/1k), so
+              please use somewhat sparingly.
+            </p>
+            <button @click.prevent="geocode" class="btn btn-warning">
+              Convert to LatLng
+            </button>
+          </div>
+        </div>
+      </form>
 
       <hr v-if="latLngs != ''" />
 
@@ -60,40 +79,54 @@
 </template>
 
 <script>
-var geocoder = require("google-geocoder");
 export default {
   data() {
     return {
+      password: "",
+      passwordError: false,
       textArea: "",
       latLngs: [],
       copyText: "Copy to clipboard",
     };
   },
   methods: {
-    geocode() {
+    async geocode(e) {
+      e.preventDefault;
       const _self = this;
-      var geo = geocoder({
-        key: process.env.GRIDSOME_GEOCODE_KEY,
-      });
+      const addresses = _self.textArea.split("\n");
+      const submission = {
+        password: _self.password,
+        addresses: addresses,
+      };
 
-      // Reset the latLngs
-      _self.latLngs = [];
+      // Reset form errors
+      _self.passwordError = false;
+      _self.latLngError = false;
 
-      // Note that this will iterate over EVERY line in the textarea
-      _self.addresses.forEach((address) => {
-        if (address.length >= 6) {
-          // Only attempt geocoding if address is at least a postal code's length (6+ chars)
-          geo.find(address, function(err, res) {
-            if (!err) {
-              _self.latLngs.push(res[0].location);
-            } else {
-              console.log(err);
+      // Submit to the API
+      await fetch("/api/geocode-addresses", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(submission),
+      })
+        .then((response) => response.text())
+        .then((result) => {
+          const jsonResult = JSON.parse(result);
+          console.log(jsonResult);
+
+          // Message errors if any
+          if (jsonResult.error) {
+            if (jsonResult.error.errorField == "password") {
+              _self.passwordError = jsonResult.error.errorMessage;
+            } else if (jsonResult.error.errorField == "latLng") {
+              _self.latLngError = jsonResult.error.errorMessage;
             }
-          });
-        } else {
-          console.log("Address provided too short: " + address);
-        }
-      });
+          }
+
+          // If no errors, provide LatLng values
+          // (TODO)
+        })
+        .catch((error) => console.log("error", error));
     },
     copyToClipboard() {
       var copyText = document.getElementById("latLngValues");
@@ -105,11 +138,6 @@ export default {
       setTimeout(() => {
         this.copyText = "Copy to clipboard";
       }, 1500);
-    },
-  },
-  computed: {
-    addresses() {
-      return this.textArea.split("\n");
     },
   },
 };
